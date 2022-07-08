@@ -1,4 +1,3 @@
-import is from '@sindresorhus/is';
 import { load } from 'js-yaml';
 import { GlobalConfig } from '../../../config/global';
 import { logger } from '../../../logger';
@@ -7,11 +6,21 @@ import { GitlabTagsDatasource } from '../../datasource/gitlab-tags';
 import { replaceReferenceTags } from '../gitlabci/utils';
 import type { PackageDependency, PackageFile } from '../types';
 
-function extractDepFromIncludeFile(includeObj: {
+type IncludeRefObj = {
   file: any;
   project: string;
-  ref: string;
-}): PackageDependency {
+  ref?: string;
+};
+
+type JSONValue = string | number | boolean | JSONObject | Array<JSONValue>;
+
+type JSONObject = {
+  [x: string]: JSONValue;
+};
+
+function extractDepFromIncludeFile(
+  includeObj: IncludeRefObj
+): PackageDependency {
   const dep: PackageDependency = {
     datasource: GitlabTagsDatasource.id,
     depName: includeObj.project,
@@ -25,6 +34,67 @@ function extractDepFromIncludeFile(includeObj: {
   return dep;
 }
 
+function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
+  const isEmptyObject = (obj: JSONObject): boolean =>
+    Object.keys(obj).length === 0;
+
+  const removeKeyFromObject = (
+    obj: JSONObject,
+    excludeKey: string
+  ): JSONObject => {
+    return Object.keys(obj)
+      .filter((key) => key !== excludeKey)
+      .reduce((cur, key) => Object.assign(cur, { [key]: obj[key] }), {});
+  };
+
+  const getReferencesFromInclude = (
+    includeValue: JSONValue
+  ): IncludeRefObj[] => {
+    const includes = (
+      Array.isArray(includeValue) ? includeValue : [includeValue]
+    ) as Array<string | JSONObject>;
+
+    // Filter out includes that dont have a file & project
+    const includeRefs = includes.filter(
+      (includeObj) =>
+        typeof includeObj === 'object' && includeObj.file && includeObj.project
+    ) as Array<IncludeRefObj>;
+
+    return includeRefs;
+  };
+
+  // If data is null, return empty list
+  if (data === null) {
+    return [];
+  }
+
+  // If Array, search each element
+  if (Array.isArray(data)) {
+    return data.map(getAllIncludeProjectRefs).flat();
+  }
+
+  // For objects, check for include key and search child elements of other keys.
+  // Empty object have no include or children and return an empty list.
+  if (typeof data === 'object') {
+    if (isEmptyObject(data)) {
+      return [];
+    }
+
+    const childrenData = Object.values(removeKeyFromObject(data, 'include'))
+      .map(getAllIncludeProjectRefs)
+      .flat();
+
+    // Process include key.
+    if (data.include) {
+      childrenData.push(...getReferencesFromInclude(data.include));
+    }
+    return childrenData;
+  }
+
+  // Primitives return empty list
+  return [];
+}
+
 export function extractPackageFile(content: string): PackageFile | null {
   const deps: PackageDependency[] = [];
   const { platform, endpoint } = GlobalConfig.get();
@@ -33,20 +103,13 @@ export function extractPackageFile(content: string): PackageFile | null {
     const doc: any = load(replaceReferenceTags(content), {
       json: true,
     });
-    let includes;
-    if (doc?.include && is.array(doc.include)) {
-      includes = doc.include;
-    } else {
-      includes = [doc.include];
-    }
+    const includes = getAllIncludeProjectRefs(doc);
     for (const includeObj of includes) {
-      if (includeObj?.file && includeObj.project) {
-        const dep = extractDepFromIncludeFile(includeObj);
-        if (platform === 'gitlab' && endpoint) {
-          dep.registryUrls = [endpoint.replace(regEx(/\/api\/v4\/?/), '')];
-        }
-        deps.push(dep);
+      const dep = extractDepFromIncludeFile(includeObj);
+      if (platform === 'gitlab' && endpoint) {
+        dep.registryUrls = [endpoint.replace(regEx(/\/api\/v4\/?/), '')];
       }
+      deps.push(dep);
     }
   } catch (err) /* istanbul ignore next */ {
     if (err.stack?.startsWith('YAMLException:')) {
