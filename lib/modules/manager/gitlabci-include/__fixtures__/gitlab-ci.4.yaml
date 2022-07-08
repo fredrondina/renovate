@@ -1,0 +1,10 @@
+---
+trigger-my-job:
+  extends: .trigger-docker-to-ecr-job
+  variables:
+    ECR_IMAGE_NAME: 'my_image'
+  trigger:
+    include:
+      - project: 'asdf/dev-tooling/pipeline-templates'
+        ref: 1.10.3
+        file: pipelines/Docker-To-ECR-Pipeline.gitlab-ci.yml

@@ -1,5 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`modules/manager/gitlabci-include/extract extractPackageFile() extracts include block within trigger 1`] = `
+Array [
+  Object {
+    "currentValue": "1.10.3",
+    "datasource": "gitlab-tags",
+    "depName": "asdf/dev-tooling/pipeline-templates",
+    "depType": "repository",
+  },
+]
+`;
+
 exports[`modules/manager/gitlabci-include/extract extractPackageFile() extracts multiple include blocks 1`] = `
 Array [
   Object {

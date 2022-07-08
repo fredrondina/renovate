@@ -5,6 +5,7 @@ import { extractPackageFile } from '.';
 const yamlFileMultiConfig = Fixtures.get('gitlab-ci.1.yaml');
 const yamlFileSingleConfig = Fixtures.get('gitlab-ci.2.yaml');
 const yamlWithEmptyIncludeConfig = Fixtures.get('gitlab-ci.3.yaml');
+const yamlWithTriggerRef = Fixtures.get('gitlab-ci.4.yaml');
 
 describe('modules/manager/gitlabci-include/extract', () => {
   describe('extractPackageFile()', () => {
@@ -27,6 +28,12 @@ describe('modules/manager/gitlabci-include/extract', () => {
       const res = extractPackageFile(yamlFileMultiConfig);
       expect(res?.deps).toMatchSnapshot();
       expect(res?.deps).toHaveLength(3);
+    });
+
+    it('extracts include block within trigger', () => {
+      const res = extractPackageFile(yamlWithTriggerRef);
+      expect(res?.deps).toMatchSnapshot();
+      expect(res?.deps).toHaveLength(1);
     });
 
     it('normalizes configured endpoints', () => {
