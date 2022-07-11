@@ -30,10 +30,10 @@ describe('modules/manager/gitlabci-include/extract', () => {
       expect(res?.deps).toHaveLength(3);
     });
 
-    it('extracts include block within trigger', () => {
+    it('extracts multiple embedded include blocks', () => {
       const res = extractPackageFile(yamlWithTriggerRef);
       expect(res?.deps).toMatchSnapshot();
-      expect(res?.deps).toHaveLength(1);
+      expect(res?.deps).toHaveLength(2);
     });
 
     it('normalizes configured endpoints', () => {

@@ -1,4 +1,3 @@
-import is from '@sindresorhus/is';
 import { load } from 'js-yaml';
 import { GlobalConfig } from '../../../config/global';
 import { logger } from '../../../logger';
@@ -7,11 +6,19 @@ import { GitlabTagsDatasource } from '../../datasource/gitlab-tags';
 import { replaceReferenceTags } from '../gitlabci/utils';
 import type { PackageDependency, PackageFile } from '../types';
 
-function extractDepFromIncludeFile(includeObj: {
+type IncludeObj = {
   file: any;
   project: string;
   ref: string;
-}): PackageDependency {
+};
+
+type JSONValue = string | number | boolean | JSONObject | Array<JSONValue>;
+
+type JSONObject = {
+  [x: string]: JSONValue;
+};
+
+function extractDepFromIncludeFile(includeObj: IncludeObj): PackageDependency {
   const dep: PackageDependency = {
     datasource: GitlabTagsDatasource.id,
     depName: includeObj.project,
@@ -25,6 +32,54 @@ function extractDepFromIncludeFile(includeObj: {
   return dep;
 }
 
+function getAllIncludes(data: JSONValue): IncludeObj[] {
+  const isEmptyObject = (obj: JSONObject): boolean =>
+    Object.keys(obj).length === 0;
+
+  const removeKeyFromObject = (
+    obj: JSONObject,
+    excludeKey: string
+  ): JSONObject => {
+    return Object.keys(obj)
+      .filter((key) => key !== excludeKey)
+      .reduce((cur, key) => Object.assign(cur, { [key]: obj[key] }), {});
+  };
+
+  // If data is null, return empty list
+  if (data === null) {
+    return [];
+  }
+
+  // If Array, search each element
+  if (Array.isArray(data)) {
+    return data.map(getAllIncludes).flat();
+  }
+
+  // For objects, check for include key and search child elements of other keys.
+  // Empty object have no include or children and return an empty list.
+  if (typeof data === 'object') {
+    if (isEmptyObject(data)) {
+      return [];
+    }
+
+    const childrenData = Object.values(removeKeyFromObject(data, 'include'))
+      .map(getAllIncludes)
+      .flat();
+
+    // Process include key.
+    if (data.include) {
+      const includes = (
+        Array.isArray(data.include) ? data.include : [data.include]
+      ) as Array<IncludeObj>;
+      childrenData.push(...includes);
+    }
+    return childrenData;
+  }
+
+  // Primitives return empty list
+  return [];
+}
+
 export function extractPackageFile(content: string): PackageFile | null {
   const deps: PackageDependency[] = [];
   const { platform, endpoint } = GlobalConfig.get();
@@ -33,12 +88,7 @@ export function extractPackageFile(content: string): PackageFile | null {
     const doc: any = load(replaceReferenceTags(content), {
       json: true,
     });
-    let includes;
-    if (doc?.include && is.array(doc.include)) {
-      includes = doc.include;
-    } else {
-      includes = [doc.include];
-    }
+    const includes = getAllIncludes(doc);
     for (const includeObj of includes) {
       if (includeObj?.file && includeObj.project) {
         const dep = extractDepFromIncludeFile(includeObj);

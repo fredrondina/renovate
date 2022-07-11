@@ -1,10 +1,13 @@
 ---
+include:
+- project: mikebryant/include-source-example
+  file: /template.yaml
+  ref: 1.0.0
+
 trigger-my-job:
-  extends: .trigger-docker-to-ecr-job
-  variables:
-    ECR_IMAGE_NAME: 'my_image'
+  extends: .extend-trigger-job
   trigger:
     include:
-      - project: 'asdf/dev-tooling/pipeline-templates'
-        ref: 1.10.3
-        file: pipelines/Docker-To-ECR-Pipeline.gitlab-ci.yml
+      - project: mikebryant/include-source-example
+        file: /template.yaml
+        ref: master
