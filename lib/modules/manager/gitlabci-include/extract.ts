@@ -6,7 +6,7 @@ import { GitlabTagsDatasource } from '../../datasource/gitlab-tags';
 import { replaceReferenceTags } from '../gitlabci/utils';
 import type { PackageDependency, PackageFile } from '../types';
 
-type IncludeObj = {
+type IncludeRefObj = {
   file: any;
   project: string;
   ref: string;
@@ -18,7 +18,9 @@ type JSONObject = {
   [x: string]: JSONValue;
 };
 
-function extractDepFromIncludeFile(includeObj: IncludeObj): PackageDependency {
+function extractDepFromIncludeFile(
+  includeObj: IncludeRefObj
+): PackageDependency {
   const dep: PackageDependency = {
     datasource: GitlabTagsDatasource.id,
     depName: includeObj.project,
@@ -32,7 +34,7 @@ function extractDepFromIncludeFile(includeObj: IncludeObj): PackageDependency {
   return dep;
 }
 
-function getAllIncludes(data: JSONValue): IncludeObj[] {
+function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
   const isEmptyObject = (obj: JSONObject): boolean =>
     Object.keys(obj).length === 0;
 
@@ -45,6 +47,22 @@ function getAllIncludes(data: JSONValue): IncludeObj[] {
       .reduce((cur, key) => Object.assign(cur, { [key]: obj[key] }), {});
   };
 
+  const getReferencesFromInclude = (
+    includeValue: JSONValue
+  ): IncludeRefObj[] => {
+    const includes = (
+      Array.isArray(includeValue) ? includeValue : [includeValue]
+    ) as Array<string | JSONObject>;
+
+    // Filter out includes that dont have a file & project
+    const includeRefs = includes.filter(
+      (includeObj) =>
+        typeof includeObj === 'object' && includeObj.file && includeObj.project
+    ) as Array<IncludeRefObj>;
+
+    return includeRefs;
+  };
+
   // If data is null, return empty list
   if (data === null) {
     return [];
@@ -52,7 +70,7 @@ function getAllIncludes(data: JSONValue): IncludeObj[] {
 
   // If Array, search each element
   if (Array.isArray(data)) {
-    return data.map(getAllIncludes).flat();
+    return data.map(getAllIncludeProjectRefs).flat();
   }
 
   // For objects, check for include key and search child elements of other keys.
@@ -63,15 +81,12 @@ function getAllIncludes(data: JSONValue): IncludeObj[] {
     }
 
     const childrenData = Object.values(removeKeyFromObject(data, 'include'))
-      .map(getAllIncludes)
+      .map(getAllIncludeProjectRefs)
       .flat();
 
     // Process include key.
     if (data.include) {
-      const includes = (
-        Array.isArray(data.include) ? data.include : [data.include]
-      ) as Array<IncludeObj>;
-      childrenData.push(...includes);
+      childrenData.push(...getReferencesFromInclude(data.include));
     }
     return childrenData;
   }
@@ -88,15 +103,13 @@ export function extractPackageFile(content: string): PackageFile | null {
     const doc: any = load(replaceReferenceTags(content), {
       json: true,
     });
-    const includes = getAllIncludes(doc);
+    const includes = getAllIncludeProjectRefs(doc);
     for (const includeObj of includes) {
-      if (includeObj?.file && includeObj.project) {
-        const dep = extractDepFromIncludeFile(includeObj);
-        if (platform === 'gitlab' && endpoint) {
-          dep.registryUrls = [endpoint.replace(regEx(/\/api\/v4\/?/), '')];
-        }
-        deps.push(dep);
+      const dep = extractDepFromIncludeFile(includeObj);
+      if (platform === 'gitlab' && endpoint) {
+        dep.registryUrls = [endpoint.replace(regEx(/\/api\/v4\/?/), '')];
       }
+      deps.push(dep);
     }
   } catch (err) /* istanbul ignore next */ {
     if (err.stack?.startsWith('YAMLException:')) {
