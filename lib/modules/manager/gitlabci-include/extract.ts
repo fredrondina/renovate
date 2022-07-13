@@ -9,7 +9,7 @@ import type { PackageDependency, PackageFile } from '../types';
 type IncludeRefObj = {
   file: any;
   project: string;
-  ref: string;
+  ref?: string;
 };
 
 type JSONValue = string | number | boolean | JSONObject | Array<JSONValue>;

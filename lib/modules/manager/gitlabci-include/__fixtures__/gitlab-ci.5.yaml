@@ -1,0 +1,5 @@
+---
+include:
+- 'https://gitlab.com/mikebryant/include-source-example.yml'
+- remote: 'https://gitlab.com/mikebryant/include-source-example.yml'
+- local: mikebryant/include-source-example
