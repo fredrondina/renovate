@@ -54,7 +54,7 @@ function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
       Array.isArray(includeValue) ? includeValue : [includeValue]
     ) as Array<string | JSONObject>;
 
-    // Filter out includes that dont have a file & project
+    // Filter out includes that dont have a file & project.
     const includeRefs = includes.filter(
       (includeObj) =>
         typeof includeObj === 'object' && includeObj.file && includeObj.project
@@ -63,12 +63,12 @@ function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
     return includeRefs;
   };
 
-  // If data is null, return empty list
+  // If data is null, return empty list.
   if (data === null) {
     return [];
   }
 
-  // If Array, search each element
+  // If Array, search each element.
   if (Array.isArray(data)) {
     return data.map(getAllIncludeProjectRefs).flat();
   }
@@ -91,7 +91,7 @@ function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
     return childrenData;
   }
 
-  // Primitives return empty list
+  // Primitives return empty list.
   return [];
 }
 
