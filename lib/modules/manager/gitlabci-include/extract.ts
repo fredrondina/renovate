@@ -1,3 +1,4 @@
+import is from '@sindresorhus/is';
 import { load } from 'js-yaml';
 import { GlobalConfig } from '../../../config/global';
 import { logger } from '../../../logger';
@@ -33,49 +34,44 @@ function extractDepFromIncludeFile(
   dep.currentValue = includeObj.ref;
   return dep;
 }
+function isEmptyObject(obj: JSONObject): boolean {
+  return Object.keys(obj).length === 0;
+}
+
+function removeKeyFromObject(obj: JSONObject, excludeKey: string): JSONObject {
+  return Object.keys(obj)
+    .filter((key) => key !== excludeKey)
+    .reduce((cur, key) => Object.assign(cur, { [key]: obj[key] }), {});
+}
+
+function getReferencesFromInclude(includeValue: JSONValue): IncludeRefObj[] {
+  const includes = (
+    is.array(includeValue) ? includeValue : [includeValue]
+  ) as Array<string | JSONObject>;
+
+  // Filter out includes that dont have a file & project.
+  const includeRefs = includes.filter(
+    (includeObj) =>
+      is.object(includeObj) && includeObj.file && includeObj.project
+  ) as Array<IncludeRefObj>;
+
+  return includeRefs;
+}
 
 function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
-  const isEmptyObject = (obj: JSONObject): boolean =>
-    Object.keys(obj).length === 0;
-
-  const removeKeyFromObject = (
-    obj: JSONObject,
-    excludeKey: string
-  ): JSONObject => {
-    return Object.keys(obj)
-      .filter((key) => key !== excludeKey)
-      .reduce((cur, key) => Object.assign(cur, { [key]: obj[key] }), {});
-  };
-
-  const getReferencesFromInclude = (
-    includeValue: JSONValue
-  ): IncludeRefObj[] => {
-    const includes = (
-      Array.isArray(includeValue) ? includeValue : [includeValue]
-    ) as Array<string | JSONObject>;
-
-    // Filter out includes that dont have a file & project.
-    const includeRefs = includes.filter(
-      (includeObj) =>
-        typeof includeObj === 'object' && includeObj.file && includeObj.project
-    ) as Array<IncludeRefObj>;
-
-    return includeRefs;
-  };
-
   // If data is null, return empty list.
-  if (data === null) {
+  if (is.null_(data)) {
     return [];
   }
 
   // If Array, search each element.
-  if (Array.isArray(data)) {
+  if (is.array(data)) {
     return data.map(getAllIncludeProjectRefs).flat();
   }
 
   // For objects, check for include key and search child elements of other keys.
   // Empty object have no include or children and return an empty list.
-  if (typeof data === 'object') {
+  if (is.object(data)) {
     if (isEmptyObject(data)) {
       return [];
     }
