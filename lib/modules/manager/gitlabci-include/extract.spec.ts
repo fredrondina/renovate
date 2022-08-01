@@ -33,8 +33,19 @@ describe('modules/manager/gitlabci-include/extract', () => {
 
     it('extracts multiple embedded include blocks', () => {
       const res = extractPackageFile(yamlWithTriggerRef);
-      expect(res?.deps).toMatchSnapshot();
       expect(res?.deps).toHaveLength(2);
+      expect(res?.deps).toMatchSnapshot([
+        {
+          currentValue: 'master',
+          datasource: 'gitlab-tags',
+          depName: 'mikebryant/include-source-example',
+        },
+        {
+          currentValue: '1.0.0',
+          datasource: 'gitlab-tags',
+          depName: 'mikebryant/include-source-example',
+        },
+      ]);
     });
 
     it('ignores includes without project and file keys', () => {
