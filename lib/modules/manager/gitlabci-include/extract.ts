@@ -4,23 +4,16 @@ import { GlobalConfig } from '../../../config/global';
 import { logger } from '../../../logger';
 import { regEx } from '../../../util/regex';
 import { GitlabTagsDatasource } from '../../datasource/gitlab-tags';
+import type {
+  GitlabInclude,
+  GitlabIncludeProject,
+  GitlabPipeline,
+} from '../gitlabci/types';
 import { replaceReferenceTags } from '../gitlabci/utils';
 import type { PackageDependency, PackageFile } from '../types';
 
-type IncludeRefObj = {
-  file: any;
-  project: string;
-  ref?: string;
-};
-
-type JSONValue = string | number | boolean | JSONObject | Array<JSONValue>;
-
-type JSONObject = {
-  [x: string]: JSONValue;
-};
-
 function extractDepFromIncludeFile(
-  includeObj: IncludeRefObj
+  includeObj: GitlabIncludeProject
 ): PackageDependency {
   const dep: PackageDependency = {
     datasource: GitlabTagsDatasource.id,
@@ -34,61 +27,54 @@ function extractDepFromIncludeFile(
   dep.currentValue = includeObj.ref;
   return dep;
 }
-function isEmptyObject(obj: JSONObject): boolean {
-  return Object.keys(obj).length === 0;
+
+function filterIncludeFromGitlabPipeline(
+  pipeline: GitlabPipeline
+): GitlabPipeline {
+  return Object.keys(pipeline)
+    .filter((key) => key !== 'include')
+    .reduce(
+      (cur, key) =>
+        Object.assign(cur, { [key]: pipeline[key as keyof typeof pipeline] }),
+      {}
+    ) as GitlabPipeline;
 }
 
-function removeKeyFromObject(obj: JSONObject, excludeKey: string): JSONObject {
-  return Object.keys(obj)
-    .filter((key) => key !== excludeKey)
-    .reduce((cur, key) => Object.assign(cur, { [key]: obj[key] }), {});
+function isGitlabPipeline(obj: any): obj is GitlabPipeline {
+  return is.object(obj) && Object.keys(obj).length !== 0;
 }
 
-function getReferencesFromInclude(includeValue: JSONValue): IncludeRefObj[] {
-  const includes = (
-    is.array(includeValue) ? includeValue : [includeValue]
-  ) as Array<string | JSONObject>;
+function isGitlabIncludeProject(
+  include: GitlabInclude
+): include is GitlabIncludeProject {
+  return !is.undefined((include as GitlabIncludeProject).project);
+}
+
+function getIncludeProjectsFromInclude(
+  includeValue: GitlabInclude[] | GitlabInclude
+): GitlabIncludeProject[] {
+  const includes = is.array(includeValue) ? includeValue : [includeValue];
 
   // Filter out includes that dont have a file & project.
-  const includeRefs = includes.filter(
-    (includeObj) =>
-      is.object(includeObj) && includeObj.file && includeObj.project
-  ) as Array<IncludeRefObj>;
-
-  return includeRefs;
+  return includes.filter(isGitlabIncludeProject);
 }
 
-function getAllIncludeProjectRefs(data: JSONValue): IncludeRefObj[] {
-  // If data is null, return empty list.
-  if (is.null_(data)) {
-    return [];
-  }
-
+function getAllIncludeProjects(data: GitlabPipeline): GitlabIncludeProject[] {
   // If Array, search each element.
   if (is.array(data)) {
-    return data.map(getAllIncludeProjectRefs).flat();
+    return data.filter(isGitlabPipeline).map(getAllIncludeProjects).flat();
   }
 
-  // For objects, check for include key and search child elements of other keys.
-  // Empty object have no include or children and return an empty list.
-  if (is.object(data)) {
-    if (isEmptyObject(data)) {
-      return [];
-    }
+  const childrenData = Object.values(filterIncludeFromGitlabPipeline(data))
+    .filter(isGitlabPipeline)
+    .map(getAllIncludeProjects)
+    .flat();
 
-    const childrenData = Object.values(removeKeyFromObject(data, 'include'))
-      .map(getAllIncludeProjectRefs)
-      .flat();
-
-    // Process include key.
-    if (data.include) {
-      childrenData.push(...getReferencesFromInclude(data.include));
-    }
-    return childrenData;
+  // Process include key.
+  if (data.include) {
+    childrenData.push(...getIncludeProjectsFromInclude(data.include));
   }
-
-  // Primitives return empty list.
-  return [];
+  return childrenData;
 }
 
 export function extractPackageFile(content: string): PackageFile | null {
@@ -96,10 +82,10 @@ export function extractPackageFile(content: string): PackageFile | null {
   const { platform, endpoint } = GlobalConfig.get();
   try {
     // TODO: fix me (#9610)
-    const doc: any = load(replaceReferenceTags(content), {
+    const doc = load(replaceReferenceTags(content), {
       json: true,
-    });
-    const includes = getAllIncludeProjectRefs(doc);
+    }) as GitlabPipeline;
+    const includes = getAllIncludeProjects(doc);
     for (const includeObj of includes) {
       const dep = extractDepFromIncludeFile(includeObj);
       if (platform === 'gitlab' && endpoint) {
