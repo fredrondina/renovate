@@ -6,6 +6,7 @@ import { regEx } from '../../../util/regex';
 import { GitlabTagsDatasource } from '../../datasource/gitlab-tags';
 import type {
   GitlabInclude,
+  GitlabIncludeLocal,
   GitlabIncludeProject,
   GitlabPipeline,
 } from '../gitlabci/types';
@@ -48,6 +49,12 @@ function isGitlabIncludeProject(
   include: GitlabInclude
 ): include is GitlabIncludeProject {
   return !is.undefined((include as GitlabIncludeProject).project);
+}
+
+export function isGitlabIncludeLocal(
+  include: GitlabInclude
+): include is GitlabIncludeLocal {
+  return !is.undefined((include as GitlabIncludeLocal).local);
 }
 
 function getIncludeProjectsFromInclude(

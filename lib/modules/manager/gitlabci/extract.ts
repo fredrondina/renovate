@@ -3,6 +3,7 @@ import { load } from 'js-yaml';
 import { logger } from '../../../logger';
 import { readLocalFile } from '../../../util/fs';
 import { regEx } from '../../../util/regex';
+import { isGitlabIncludeLocal } from '../gitlabci-include/extract';
 import type { ExtractConfig, PackageDependency, PackageFile } from '../types';
 import type { GitlabPipeline, Image, Job, Services } from './types';
 import { getGitlabDep, replaceReferenceTags } from './utils';
@@ -144,8 +145,8 @@ export async function extractAllPackageFiles(
     }
 
     if (is.array(doc?.include)) {
-      for (const includeObj of doc.include) {
-        if (is.string(includeObj.local)) {
+      for (const includeObj of doc.include.filter(isGitlabIncludeLocal)) {
+        if (!is.undefined(includeObj.local)) {
           const fileObj = includeObj.local.replace(regEx(/^\//), '');
           if (!seen.has(fileObj)) {
             seen.add(fileObj);
