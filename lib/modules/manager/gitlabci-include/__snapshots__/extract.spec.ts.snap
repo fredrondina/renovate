@@ -1,22 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`modules/manager/gitlabci-include/extract extractPackageFile() extracts multiple embedded include blocks 1`] = `
-Array [
-  Object {
-    "currentValue": "master",
-    "datasource": "gitlab-tags",
-    "depName": "mikebryant/include-source-example",
-    "depType": "repository",
-  },
-  Object {
-    "currentValue": "1.0.0",
-    "datasource": "gitlab-tags",
-    "depName": "mikebryant/include-source-example",
-    "depType": "repository",
-  },
-]
-`;
-
 exports[`modules/manager/gitlabci-include/extract extractPackageFile() extracts multiple include blocks 1`] = `
 Array [
   Object {
