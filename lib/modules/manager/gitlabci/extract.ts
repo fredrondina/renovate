@@ -3,8 +3,8 @@ import { load } from 'js-yaml';
 import { logger } from '../../../logger';
 import { readLocalFile } from '../../../util/fs';
 import { regEx } from '../../../util/regex';
-import { isGitlabIncludeLocal } from '../gitlabci-include/extract';
 import type { ExtractConfig, PackageDependency, PackageFile } from '../types';
+import { isGitlabIncludeLocal } from './common';
 import type { GitlabPipeline, Image, Job, Services } from './types';
 import { getGitlabDep, replaceReferenceTags } from './utils';
 
