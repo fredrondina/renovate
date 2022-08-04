@@ -34,7 +34,7 @@ describe('modules/manager/gitlabci-include/extract', () => {
     it('extracts multiple embedded include blocks', () => {
       const res = extractPackageFile(yamlWithTriggerRef);
       expect(res?.deps).toHaveLength(2);
-      expect(res?.deps).toMatchSnapshot([
+      expect(res?.deps).toMatchObject([
         {
           currentValue: 'master',
           datasource: 'gitlab-tags',
