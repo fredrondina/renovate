@@ -6,12 +6,16 @@ import { regEx } from '../../../util/regex';
 import { GitlabTagsDatasource } from '../../datasource/gitlab-tags';
 import type {
   GitlabInclude,
-  GitlabIncludeLocal,
   GitlabIncludeProject,
   GitlabPipeline,
 } from '../gitlabci/types';
 import { replaceReferenceTags } from '../gitlabci/utils';
 import type { PackageDependency, PackageFile } from '../types';
+import {
+  filterIncludeFromGitlabPipeline,
+  isGitlabIncludeProject,
+  isGitlabPipeline,
+} from './common';
 
 function extractDepFromIncludeFile(
   includeObj: GitlabIncludeProject
@@ -27,34 +31,6 @@ function extractDepFromIncludeFile(
   }
   dep.currentValue = includeObj.ref;
   return dep;
-}
-
-function filterIncludeFromGitlabPipeline(
-  pipeline: GitlabPipeline
-): GitlabPipeline {
-  return Object.keys(pipeline)
-    .filter((key) => key !== 'include')
-    .reduce(
-      (cur, key) =>
-        Object.assign(cur, { [key]: pipeline[key as keyof typeof pipeline] }),
-      {}
-    ) as GitlabPipeline;
-}
-
-function isGitlabPipeline(obj: any): obj is GitlabPipeline {
-  return is.object(obj) && Object.keys(obj).length !== 0;
-}
-
-function isGitlabIncludeProject(
-  include: GitlabInclude
-): include is GitlabIncludeProject {
-  return !is.undefined((include as GitlabIncludeProject).project);
-}
-
-export function isGitlabIncludeLocal(
-  include: GitlabInclude
-): include is GitlabIncludeLocal {
-  return !is.undefined((include as GitlabIncludeLocal).local);
 }
 
 function getIncludeProjectsFromInclude(
