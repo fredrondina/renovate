@@ -45,9 +45,8 @@ function getIncludeProjectsFromInclude(
 function getAllIncludeProjects(data: GitlabPipeline): GitlabIncludeProject[] {
   // If Array, search each element.
   if (is.array(data)) {
-    return data
+    return (data as GitlabPipeline[])
       .filter(isNonEmptyObject)
-      .map((pipeline) => pipeline as GitlabPipeline)
       .map(getAllIncludeProjects)
       .flat();
   }
