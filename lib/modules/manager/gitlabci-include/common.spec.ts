@@ -6,6 +6,7 @@ import {
   filterIncludeFromGitlabPipeline,
   isGitlabIncludeLocal,
   isGitlabIncludeProject,
+  isNonEmptyObject,
 } from './common';
 
 const yamlFileMultiConfig = Fixtures.get('gitlab-ci.1.yaml');
@@ -41,6 +42,16 @@ describe('modules/manager/gitlabci-include/common', () => {
 
     it('returns false if GitlabInclude is not GitlabIncludeProject', () => {
       expect(isGitlabIncludeProject(includeLocal)).toBe(false);
+    });
+  });
+
+  describe('isNonEmptyObject()', () => {
+    it('returns true if not empty', () => {
+      expect(isNonEmptyObject({ attribute1: 1 })).toBe(true);
+    });
+
+    it('returns false if empty', () => {
+      expect(isNonEmptyObject({})).toBe(false);
     });
   });
 });
