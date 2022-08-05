@@ -14,7 +14,7 @@ import type { PackageDependency, PackageFile } from '../types';
 import {
   filterIncludeFromGitlabPipeline,
   isGitlabIncludeProject,
-  isGitlabPipeline,
+  isNonEmptyObject,
 } from './common';
 
 function extractDepFromIncludeFile(
@@ -45,11 +45,15 @@ function getIncludeProjectsFromInclude(
 function getAllIncludeProjects(data: GitlabPipeline): GitlabIncludeProject[] {
   // If Array, search each element.
   if (is.array(data)) {
-    return data.filter(isGitlabPipeline).map(getAllIncludeProjects).flat();
+    return data
+      .filter(isNonEmptyObject)
+      .map((pipeline) => pipeline as GitlabPipeline)
+      .map(getAllIncludeProjects)
+      .flat();
   }
-
+  isNonEmptyObject;
   const childrenData = Object.values(filterIncludeFromGitlabPipeline(data))
-    .filter(isGitlabPipeline)
+    .filter(isNonEmptyObject)
     .map(getAllIncludeProjects)
     .flat();
 
