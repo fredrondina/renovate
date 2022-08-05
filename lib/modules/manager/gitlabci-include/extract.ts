@@ -51,7 +51,7 @@ function getAllIncludeProjects(data: GitlabPipeline): GitlabIncludeProject[] {
       .map(getAllIncludeProjects)
       .flat();
   }
-  isNonEmptyObject;
+
   const childrenData = Object.values(filterIncludeFromGitlabPipeline(data))
     .filter(isNonEmptyObject)
     .map(getAllIncludeProjects)
