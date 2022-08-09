@@ -6,7 +6,6 @@ const yamlFileMultiConfig = Fixtures.get('gitlab-ci.1.yaml');
 const yamlFileSingleConfig = Fixtures.get('gitlab-ci.2.yaml');
 const yamlWithEmptyIncludeConfig = Fixtures.get('gitlab-ci.3.yaml');
 const yamlWithTriggerRef = Fixtures.get('gitlab-ci.4.yaml');
-const yamlWithNonObject = Fixtures.get('gitlab-ci.5.yaml');
 
 describe('modules/manager/gitlabci-include/extract', () => {
   describe('extractPackageFile()', () => {
@@ -49,8 +48,12 @@ describe('modules/manager/gitlabci-include/extract', () => {
     });
 
     it('ignores includes without project and file keys', () => {
-      const res = extractPackageFile(yamlWithNonObject);
-      expect(res?.deps).toBeUndefined();
+      const includeWithoutProjectRef = `include:
+      - 'https://gitlab.com/mikebryant/include-source-example.yml'
+      - remote: 'https://gitlab.com/mikebryant/include-source-example.yml'
+      - local: mikebryant/include-source-example`;
+      const res = extractPackageFile(includeWithoutProjectRef);
+      expect(res).toBeNull();
     });
 
     it('normalizes configured endpoints', () => {
