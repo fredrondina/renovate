@@ -1,5 +1,5 @@
 export interface GitlabIncludeLocal {
-  local?: string;
+  local: string;
 }
 
 export interface GitlabIncludeProject {
