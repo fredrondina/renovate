@@ -146,12 +146,10 @@ export async function extractAllPackageFiles(
 
     if (is.array(doc?.include)) {
       for (const includeObj of doc.include.filter(isGitlabIncludeLocal)) {
-        if (!is.undefined(includeObj.local)) {
-          const fileObj = includeObj.local.replace(regEx(/^\//), '');
-          if (!seen.has(fileObj)) {
-            seen.add(fileObj);
-            filesToExamine.push(fileObj);
-          }
+        const fileObj = includeObj.local.replace(regEx(/^\//), '');
+        if (!seen.has(fileObj)) {
+          seen.add(fileObj);
+          filesToExamine.push(fileObj);
         }
       }
     } else if (is.string(doc?.include)) {
