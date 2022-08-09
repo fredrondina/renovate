@@ -19,7 +19,10 @@ const includeProject = { project: 'something' };
 describe('modules/manager/gitlabci-include/common', () => {
   describe('filterIncludeFromGitlabPipeline()', () => {
     it('returns GitlabPipeline without top level include key', () => {
-      expect(filterIncludeFromGitlabPipeline(pipeline)).toMatchObject({
+      expect(pipeline).toHaveProperty('include');
+      const filtered_pipeline = filterIncludeFromGitlabPipeline(pipeline);
+      expect(filtered_pipeline).not.toHaveProperty('include');
+      expect(filtered_pipeline).toEqual({
         script: [null, null],
       });
     });
