@@ -67,7 +67,6 @@ export function extractPackageFile(content: string): PackageFile | null {
   const deps: PackageDependency[] = [];
   const { platform, endpoint } = GlobalConfig.get();
   try {
-    // TODO: fix me (#9610)
     const doc = load(replaceReferenceTags(content), {
       json: true,
     }) as GitlabPipeline;
